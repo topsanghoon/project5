@@ -2,7 +2,7 @@ struct stat;
 struct rtcdate;
 typedef struct __lock_t {
   uint flag;  
-} lock_t
+} lock_t;
 
 // system calls
 int fork(void);
