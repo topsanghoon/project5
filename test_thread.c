@@ -8,7 +8,10 @@ lock_t* lk;
 
 void f1(void* arg1, void* arg2) {
   int num = *(int*)arg1;
+  //printf(1, "f1: arg1 = %d, num = %d\n", *(int*)arg1, num);
   if (num) lock_acquire(lk);
+  printf(1, "1. sleep for %d ticks\n", SLEEP_TIME);
+  printf(1, "1. sleep for %d ticks\n", SLEEP_TIME);
   printf(1, "1. sleep for %d ticks\n", SLEEP_TIME);
   sleep(SLEEP_TIME);
   if (num) lock_release(lk);
@@ -17,7 +20,10 @@ void f1(void* arg1, void* arg2) {
 
 void f2(void* arg1, void* arg2) {
   int num = *(int*)arg1;
+  //printf(1, "f2: arg1 = %d, num = %d\n", *(int*)arg1, num);
   if (num) lock_acquire(lk);
+  printf(1, "2. sleep for %d ticks\n", SLEEP_TIME);
+  printf(1, "2. sleep for %d ticks\n", SLEEP_TIME);
   printf(1, "2. sleep for %d ticks\n", SLEEP_TIME);
   sleep(SLEEP_TIME);
   if (num) lock_release(lk);
@@ -26,7 +32,10 @@ void f2(void* arg1, void* arg2) {
 
 void f3(void* arg1, void* arg2) {
   int num = *(int*)arg1;
+  //printf(1, "f3: arg1 = %d, num = %d\n", *(int*)arg1, num);
   if (num) lock_acquire(lk);
+  printf(1, "3. sleep for %d ticks\n", SLEEP_TIME);
+  printf(1, "3. sleep for %d ticks\n", SLEEP_TIME);
   printf(1, "3. sleep for %d ticks\n", SLEEP_TIME);
   sleep(SLEEP_TIME);
   if (num) lock_release(lk);
@@ -38,7 +47,6 @@ main(int argc, char *argv[])
 {
   lock_init(lk);
   int arg1 = 1, arg2 = 1;
-
   printf(1, "below should be sequential print statements:\n");
   thread_create(&f1, (void *)&arg1, (void *)&arg2);
   thread_create(&f2, (void *)&arg1, (void *)&arg2);

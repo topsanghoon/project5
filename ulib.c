@@ -5,6 +5,47 @@
 #include "mmu.h"
 #include "x86.h"
 
+int 
+thread_create(void *fcn, void* arg1, void* arg2)
+{
+  void* stack = malloc(PGSIZE);
+  int pid;
+  //printf(1, "arg1 value in thread_create: %d\n", *(int *)arg1);
+  if((pid = clone(fcn, arg1, arg2, stack)) < 0){
+    return -1;
+  }
+  return pid;
+}
+
+int 
+thread_join()
+{
+  void * stack;
+  int pid;
+  if((pid = join(&stack)) < 0)
+    return -1;
+  free(stack);
+  return pid;
+}
+
+void 
+lock_init(lock_t *lock)
+{
+  lock->flag = 0;
+}
+
+void 
+lock_acquire(lock_t *lock){
+  //printf(1, "lock 요구");
+  while(xchg(&lock->flag, 1) != 0);
+}
+
+void 
+lock_release(lock_t *lock){
+	xchg(&lock->flag, 0);
+}
+
+
 char*
 strcpy(char *s, const char *t)
 {

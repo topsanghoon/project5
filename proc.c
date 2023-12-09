@@ -20,6 +20,9 @@ extern void trapret(void);
 
 static void wakeup1(void *chan);
 
+
+
+
 void
 pinit(void)
 {
@@ -172,6 +175,95 @@ growproc(int n)
   curproc->sz = sz;
   switchuvm(curproc);
   return 0;
+}
+
+int                                             //clone, join 구현부
+clone(void *fcn, void *arg1, void *arg2, void *stack){
+  
+  int i, pid;
+  struct proc *np;
+  struct proc *curproc = myproc();
+  void *nfake, *narg1, *narg2;
+
+  if((np = allocproc()) == 0){  //현재 프로세스를 할당하고
+    return -1;                  //비어있으면 -1 반환
+  }
+
+  np->sz = curproc->sz;
+  np->parent = curproc;
+  *np->tf = *curproc->tf;
+  np->pgdir = curproc->pgdir; //현재 프로세스 정보 복사해주고
+
+  narg2 = stack - PGSIZE;
+  narg1 = narg2 + sizeof(void *);
+  nfake = narg1 + sizeof(void *);   //스택 포인터 위치를 지정해주고
+
+  *(uint*)narg2 = (uint)arg2;       //스택에 저장
+  *(uint*)narg1 = (uint)arg1;
+  *(uint*)nfake = 0xffffffff;
+
+  np->tf->esp = (uint)stack - PGSIZE; //레지스터 위치 설정
+  np->tf->ebp = (uint)stack - PGSIZE + 3 * sizeof(void *); 
+  np->stack = stack;  //스택의 시작 위치를 넣어줌
+  np->tf->eax = 0;
+  np->tf->eip = (uint) fcn;
+
+  for(i = 0; i < NOFILE; i++) //자식 프로세스에 현재 프로세스 복사
+    if(curproc->ofile[i])
+      np->ofile[i] = filedup(curproc->ofile[i]);
+  np->cwd = idup(curproc->cwd);
+
+  safestrcpy(np->name, curproc->name, sizeof(curproc->name));
+
+  pid = np->pid;    //새로운 프로세스 상태 runnable로 갱신
+  acquire(&ptable.lock);
+  np->state = RUNNABLE;
+  release(&ptable.lock);
+
+  return pid;
+}
+
+int 
+join(void **stack){
+    struct proc *p;
+  int havekids, pid;
+  struct proc *curproc = myproc();
+  
+  acquire(&ptable.lock);
+  for(;;){
+    havekids = 0;
+
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {  //페이지 테이블을 순회하며
+
+      if(p->parent != curproc || p->pgdir != p->parent->pgdir)  //자식 프로세스 확인
+        continue;
+        
+      havekids = 1;   //자식 프로세스이고 zombie 상태이면
+      if(p->state == ZOMBIE){
+
+        pid = p->pid;
+        kfree(p->kstack); //자식 프로세스 초기화 과정
+        p->kstack = 0;
+        p->pid = 0;
+        p->parent = 0;
+        p->name[0] = 0;
+        p->killed = 0;
+        p->state = UNUSED;
+        *stack = p->stack;
+        p->stack = 0;
+
+        release(&ptable.lock);
+        return pid;
+      }
+    }
+
+    if(!havekids || curproc->killed){ //자식이 없거나 현재 프로세스가 종료되었다면
+      release(&ptable.lock);
+      return -1;  //lock 해제하고 -1반환
+    }
+
+    sleep(curproc, &ptable.lock); //아니라면 자식이 종료까지 기다림
+  }
 }
 
 // Create a new process copying p as the parent.

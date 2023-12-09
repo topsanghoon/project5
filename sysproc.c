@@ -7,6 +7,29 @@
 #include "mmu.h"
 #include "proc.h"
 
+int     
+sys_clone(void)
+{
+  void *fcn, *arg1, *arg2, *stack;
+  if(argptr(0, (void*)&fcn, sizeof(void*)) < 0 || 
+      argptr(1, (void*)&arg1, sizeof(void*)) < 0 ||  
+      argptr(2, (void*)&arg2, sizeof(void*)) < 0 ||  
+      argptr(3, (void*)&stack, sizeof(void*)) < 0)
+    return -1;
+
+  return clone((void *)fcn, (void *)arg1, (void *)arg2, (void *)stack);
+}
+
+int
+sys_join(void)
+{
+  void *stack;
+  if (argptr(0, (void*)&stack, sizeof(void *)) < 0)
+    return -1;
+  
+  return join(stack);
+}
+
 int
 sys_fork(void)
 {
